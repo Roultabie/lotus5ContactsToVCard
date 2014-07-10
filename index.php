@@ -41,7 +41,7 @@ function toVCard($file)
                     $officeCity[1] = $officeCityTemp[2];
                 }
                 if (preg_match('/(\d+)\s*(.+)/', $homeZip[1], $homeZipTemp) || preg_match('/([.+^\d)\s*(\d+)/', $homeZip[1], $homeZipTemp)) {
-                    $homeZip[1]  = $homrZipTemp[1];
+                    $homeZip[1]  = $homeZipTemp[1];
                     $homeCity[1] = $homeZipTemp[2];
                 }
                 if (preg_match('/(\d+)\s*(.+)/', $homeCity[1], $homeCityTemp) || preg_match('/(.+^\d))\s*(\d+)/', $homeCity[1], $homeCityTemp)) {
