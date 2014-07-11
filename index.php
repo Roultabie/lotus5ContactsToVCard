@@ -1,4 +1,8 @@
 <?php
+if (file_exists('captcha.php')) {
+	require_once 'captcha.php';
+}
+
 function toVCard($file)
 {
 	if (file_exists($file))
@@ -105,6 +109,47 @@ function sendVcardByMail($mailTo, $vCard)
 	}
 }
 
+function setCaptcha()
+{
+	$nbCapchas           = count($GLOBALS['captchas']);
+	$randomKey           = mt_rand(0, $nbCapchas - 1);
+	$token               = md5(mt_rand());
+	$captcha             = $GLOBALS['captchas'][$randomKey];
+	$GLOBALS['captcha']  = '<input type="text" name="hgiozjdjgfg" id="hgiozjdjgfg" value="" placeholder="' . $captcha['question'] . '">' . PHP_EOL;
+	$GLOBALS['captcha'] .= '<input type="hidden" name="pqdhnsljkqzbhxh" value="' . $token . '">' . PHP_EOL;
+	$_SESSION['cToken']  = $token;
+	$_SESSION['cKey']    = $randomKey;
+}
+
+function controlCaptcha($answer, $token)
+{
+	if ($_SESSION['cToken'] !== $token || empty($answer)) {
+		$key = $_SESSION['cKey'];
+		if (!array_key_exists($key, $GLOBALS['captchas']) || $GLOBALS['captchas'][$key]['answer'] !== $answer) {
+			unset($_GET, $_POST, $_FILES);
+			//blackList('add');
+			initCaptcha();
+		}
+	}
+	if (!array_key_exists($key, $GLOBALS['captchas']) && !empty($answer)) {
+		
+	}
+}
+
+function initCaptcha()
+{
+	if (!empty($_POST) && is_array($GLOBALS['captchas'])) {
+		controlCaptcha(addslashes($_POST['hgiozjdjgfg']), addslashes($_POST['pqdhnsljkqzbhxh']));
+	}
+	elseif (is_array($GLOBALS['captchas'])) {
+		setCaptcha();
+	}
+}
+session_start();
+$_SESSION['startTime'] = microtime(true);
+
+initCaptcha();
+
 if (!empty($_POST) && is_array($_FILES)) {
 	if (is_uploaded_file($_FILES['file']['tmp_name'])) {
 		$vCard = toVCard($_FILES['file']['tmp_name']);
@@ -209,6 +254,9 @@ if (!empty($_POST) && is_array($_FILES)) {
 		<form enctype="multipart/form-data" name="upload contacts" method="post">
 			<input type="file" name="file">
 			<input type="email" name="email" value="" placeholder="Indiquez votre adresse email">
+			<?php if (!empty($GLOBALS['captcha'])) {
+				echo $GLOBALS['captcha'];
+			} ?>
 			<input type="submit" name="submit" value="Générer">
 		</form>
 	</div>
