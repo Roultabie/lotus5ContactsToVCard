@@ -2,6 +2,9 @@
 if (file_exists('captcha.php')) {
 	require_once 'captcha.php';
 }
+if (file_exists('blacklist.php')) {
+	require_once 'blacklist.php';
+}
 
 function toVCard($file)
 {
@@ -109,6 +112,40 @@ function sendVcardByMail($mailTo, $vCard)
 	}
 }
 
+function blackList($action)
+{
+	$key  = $_SERVER['REMOTE_ADDR'];
+	$time = microtime(true);
+	if (!empty($action)) {
+		if ($action === 'add') {
+			$GLOBALS['blackList'][$key] = $time;
+			$result = $time;
+		}
+		elseif ($action === 'del') {
+			unset($GLOBALS['blackList'][$key]);
+			$result = false;
+		}
+		if (is_writable($_SERVER['DOCUMENT_ROOT'])) {
+			$content  = '<?php' . PHP_EOL;
+			$content .= '$blackList = ' . var_export($GLOBALS['blackList'], true) . ';' . PHP_EOL;
+			$content .= '?>'; 
+			file_put_contents('blacklist.php', $content);
+		}
+	}
+	elseif (is_array($GLOBALS['blackList'])) {
+		if (array_key_exists($key, $GLOBALS['blackList'])) {
+			$result = $GLOBALS['blackList'][$key];
+		}
+		else {
+			$result = false;
+		}
+	}
+	else {
+		$result = false;
+	}
+	return $result;
+}
+
 function setCaptcha()
 {
 	$nbCapchas           = count($GLOBALS['captchas']);
@@ -123,16 +160,18 @@ function setCaptcha()
 
 function controlCaptcha($answer, $token)
 {
-	if ($_SESSION['cToken'] !== $token || empty($answer)) {
+	if ($_SESSION['cToken'] === $token && !empty($answer)) {
 		$key = $_SESSION['cKey'];
 		if (!array_key_exists($key, $GLOBALS['captchas']) || $GLOBALS['captchas'][$key]['answer'] !== $answer) {
 			unset($_GET, $_POST, $_FILES);
-			//blackList('add');
+			blackList('add');
 			initCaptcha();
 		}
 	}
-	if (!array_key_exists($key, $GLOBALS['captchas']) && !empty($answer)) {
-		
+	else {
+		unset($_GET, $_POST, $_FILES);
+		blackList('add');
+		initCaptcha();
 	}
 }
 
@@ -145,6 +184,9 @@ function initCaptcha()
 		setCaptcha();
 	}
 }
+
+(blackList() !== false) ? exit('Ah ah ah, you didn\'t say the magic word !') : '';
+
 session_start();
 $_SESSION['startTime'] = microtime(true);
 
